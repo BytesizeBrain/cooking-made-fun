@@ -16,7 +16,14 @@ def register():
     if not full_name or not email or not password_hash:
         return jsonify({"error": "Missing required fields"}), 400
     
-    # Write user information to database
-    # Either by creating an ORM object or writing raw SQL
+    from app.models import User, db
+    # Check if user already exists
+    if User.query.filter_by(email=email).first():
+        return jsonify({"error": "Email already registered"}), 400
+
+    # Create and add new user
+    new_user = User(full_name=full_name, email=email, password_hash=password_hash)
+    db.session.add(new_user)
+    db.session.commit()
 
     return jsonify({"message": f"{email} Registered"}), 201
