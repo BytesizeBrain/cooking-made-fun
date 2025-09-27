@@ -1,7 +1,15 @@
 import logging
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, session
 
 users_bp = Blueprint('users', __name__)
+
+@users_bp.route('/login', methods=['POST'])
+def login():
+    # Check if user is already logged in
+    # Google OAuth login
+    # Get user info from Google and write to DB if new user
+    pass
+
 
 @users_bp.route('/api/users/register', methods=['POST'])
 def register():
