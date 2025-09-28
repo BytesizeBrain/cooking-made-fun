@@ -32,7 +32,7 @@ def login():
         logging.debug("POST request received for login")
         
         # Check if user is already logged in
-        if 'username' in session:
+        if 'email' in session:
             logging.debug("User already logged in, redirecting to index")
             return redirect(url_for('main.index'))
         
@@ -48,6 +48,10 @@ def login():
             logging.error(f"Traceback: {traceback.format_exc()}")
             return "An error occurred during login. Please try again.", 500
 
+@users_bp.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('users.login'))
 
 @users_bp.route('/authorize/google')
 def authorize_google():
@@ -66,10 +70,42 @@ def authorize_google():
     except Exception as e:
         logging.error(f"Error fetching user info from Google: {e}")
         return "An error occurred while fetching user information. Please try again.", 500
+    
+    session['oauth_token'] = token
+    session['email'] = user_info['email']
 
     # Check if user exists in DB, if not create new user
     user = User.query.filter_by(email=user_info['email']).first()
     if not user:
+        session['display_name'] = user_info['name']
+        session['profile_pic'] = user_info.get('picture', "https://static.vecteezy.com/system/resources/previews/009/292/244/non_2x/default-avatar-icon-of-social-media-user-vector.jpg")
+        return redirect(url_for('users.complete_profile'))
+    
+    # Return the user to the index page
+    return redirect(url_for('main.index'))
+
+@users_bp.route('/profile/complete', methods=['GET', 'POST'])
+def complete_profile():
+    if 'email' not in session:
+        return redirect(url_for('users.login'))
+    
+    if request.method == 'GET':
+        # TODO: Make this page
+        return render_template('complete_profile.html', email=session['email'], display_name=session.get('display_name', ''), profile_pic=session.get('profile_pic', 'https://static.vecteezy.com/system/resources/previews/009/292/244/non_2x/default-avatar-icon-of-social-media-user-vector.jpg'))
+    
+    if request.method == 'POST':
+        display_name = request.form.get('display_name')
+        username = request.form.get('username')
+        profile_pic = request.form.get('profile_pic', "https://static.vecteezy.com/system/resources/previews/009/292/244/non_2x/default-avatar-icon-of-social-media-user-vector.jpg")
+        
+        if not display_name or not username:
+            return "Display name and username are required.", 400 # UI should prevent this, this is just a fallback
+        
+        # Check if username is already taken
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            return "Username already taken. Please choose another one.", 400 # Ideally, the UI calls the GET /api/user/check_username with the username beforehand to avoid this, this is just a fallback
+        
         # Generate UUID for new user
         new_id = str(uuid.uuid4())
         user = User.query.filter_by(id=new_id).first()
@@ -78,16 +114,56 @@ def authorize_google():
             new_id = str(uuid.uuid4())
             user = User.query.filter_by(id=new_id).first()
 
-        new_user = User(id=new_id, email=user_info['email'], display_name=user_info['name'])
+        new_user = User(id=new_id, email=session['email'], display_name=display_name, username=username, profile_pic=profile_pic)
         db.session.add(new_user)
         db.session.commit()
-    
-    # Log the user in (store info in session)
-    session['oauth_token'] = token
-    session['username'] = user_info['email']
-    return redirect(url_for('main.index'))
+        
+        # Clear session variables used during profile completion
+        session.pop('display_name', None)
+        session.pop('profile_pic', None)
+        
+        return redirect(url_for('main.index'))
 
-@users_bp.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('users.login'))
+# Pure API Routes (No page rendering)
+
+@users_bp.route('/api/user/update', methods=['PUT'])
+def update_user():
+    if 'email' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    user = User.query.filter_by(email=session['email']).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    data = request.json
+    updated = False
+
+    if 'display_name' in data and data['display_name'] is not None:
+        user.display_name = data['display_name']
+        updated = True
+    if 'profile_pic' in data and data['profile_pic'] is not None:
+        user.profile_pic = data['profile_pic']
+        updated = True
+    if 'username' in data and data['username'] is not None and not User.query.filter_by(username=data['username']).first():
+        user.username = data['username']
+        updated = True
+    
+    if updated:
+        db.session.commit()
+        return jsonify({"message": "User updated successfully"}), 200
+    else:
+        return jsonify({"message": "No valid fields to update"}), 400
+
+# API to be used during registration and name changes to check if a username is already taken
+@users_bp.route('/api/user/check_username', methods=['GET'])
+def check_username():
+    data = request.json
+    username = data.get('username')
+    if not username:
+        return jsonify({"error": "Username parameter is required"}), 400
+    
+    user = User.query.filter_by(username=username).first()
+    if user:
+        return jsonify({"exists": True}), 200
+    else:
+        return jsonify({"exists": False}), 200
