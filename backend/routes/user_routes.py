@@ -2,8 +2,11 @@ import logging
 import uuid
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, session
 from authlib.integrations.flask_client import OAuth
-from app import app, db
+from extensions import app, db
 from models.user_model import User
+
+# Configure logging to see debug messages
+logging.basicConfig(level=logging.DEBUG)
 
 oauth = OAuth(app)
 google = oauth.register(
@@ -23,19 +26,26 @@ users_bp = Blueprint('users', __name__)
 def login():
     if request.method == 'GET':
         # Render the login page with a Google sign-in button
-        return render_template('login.html') # TODO: Make page
+        return render_template('login.html')
     
     if request.method == 'POST':
+        logging.debug("POST request received for login")
+        
         # Check if user is already logged in
         if 'username' in session:
+            logging.debug("User already logged in, redirecting to index")
             return redirect(url_for('main.index'))
         
         # Start OAuth flow by redirecting to Google's OAuth 2.0 server
         try:
-            redirect_uri = url_for('authorize_google', _external=True)
+            redirect_uri = url_for('users.authorize_google', _external=True)
+            logging.debug(f"Redirect URI: {redirect_uri}")
+            logging.debug("About to call google.authorize_redirect")
             return google.authorize_redirect(redirect_uri)
         except Exception as e:
             logging.error(f"Error during Google OAuth redirect: {e}")
+            import traceback
+            logging.error(f"Traceback: {traceback.format_exc()}")
             return "An error occurred during login. Please try again.", 500
 
 
@@ -76,3 +86,8 @@ def authorize_google():
     session['oauth_token'] = token
     session['username'] = user_info['email']
     return redirect(url_for('main.index'))
+
+@users_bp.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('users.login'))
