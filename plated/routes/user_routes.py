@@ -46,7 +46,7 @@ def login():
             logging.error(f"Error during Google OAuth redirect: {e}")
             import traceback
             logging.error(f"Traceback: {traceback.format_exc()}")
-            return "An error occurred during login. Please try again.", 500
+            return jsonify({"error": "An error occurred during login. Please try again."}), 500
 
 @users_bp.route('/logout')
 def logout():
@@ -60,7 +60,7 @@ def authorize_google():
         token = google.authorize_access_token()
     except Exception as e:
         logging.error(f"Error during Google OAuth token exchange: {e}")
-        return "An error occurred during login. Please try again.", 500
+        return jsonify({"error": "An error occurred during login. Please try again."}), 500
 
     try:
         # Get user information from google userinfo endpoint
@@ -69,7 +69,7 @@ def authorize_google():
         user_info = resp.json()
     except Exception as e:
         logging.error(f"Error fetching user info from Google: {e}")
-        return "An error occurred while fetching user information. Please try again.", 500
+        return jsonify({"error": "An error occurred while fetching user information. Please try again."}), 500
     
     session['oauth_token'] = token
     session['email'] = user_info['email']
@@ -99,12 +99,12 @@ def complete_profile():
         profile_pic = request.form.get('profile_pic', "https://static.vecteezy.com/system/resources/previews/009/292/244/non_2x/default-avatar-icon-of-social-media-user-vector.jpg")
         
         if not display_name or not username:
-            return "Display name and username are required.", 400 # UI should prevent this, this is just a fallback
+            return jsonify({"error": "Display name and username are required."}), 400  # UI should prevent this, this is just a fallback
         
         # Check if username is already taken
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
-            return "Username already taken. Please choose another one.", 400 # Ideally, the UI calls the GET /api/user/check_username with the username beforehand to avoid this, this is just a fallback
+            return jsonify({"error": "Username already taken. Please choose another one."}), 400  # Ideally, the UI calls the GET /api/user/check_username with the username beforehand to avoid this, this is just a fallback
         
         # Generate UUID for new user
         new_id = str(uuid.uuid4())
