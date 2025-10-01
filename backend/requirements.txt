@@ -3,3 +3,5 @@ flask_sqlalchemy
 dotenv
 Authlib
 Flask-OAuthlib
+PyJWT
+datetime
