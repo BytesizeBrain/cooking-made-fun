@@ -9,7 +9,7 @@ load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 
-app.config['FRONTEND_URL'] = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+app.config['FRONTEND_URL'] = os.getenv('FRONTEND_URL', 'http://localhost:5173/')
 
 app.config['JWT_SECRET'] = os.getenv('SECRET_KEY')
 if not app.config['JWT_SECRET']:
