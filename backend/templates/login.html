@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Cooking Made Fun{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="brand">
+        <div class="brand-icon">
+            <i class="fas fa-utensils"></i>
+        </div>
+        <h1>Cooking Made Fun</h1>
+        <h2>Welcome Back!</h2>
+        <p>Sign in to continue your culinary journey</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('users.login') }}">
+        <button type="submit" class="btn google-btn">
+            <i class="fab fa-google"></i>
+            Continue with Google
+        </button>
+    </form>
+
+    <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e2e8f0;">
+        <p style="font-size: 0.9rem; color: #a0aec0;">
+            <i class="fas fa-shield-alt"></i>
+            Your data is secure and private
+        </p>
+    </div>
+</div>
+{% endblock %}
+

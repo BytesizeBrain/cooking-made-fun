@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Cooking Made Fun{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="brand">
+        <div class="brand-icon">
+            <i class="fas fa-utensils"></i>
+        </div>
+        <h1>Cooking Made Fun</h1>
+        <h2>Welcome to your dashboard!</h2>
+    </div>
+
+    <div class="user-info">
+        <div class="user-email">
+            <i class="fas fa-user"></i>
+            {{ session.email }}
+        </div>
+        <div class="user-welcome">
+            You're all set to start cooking!
+        </div>
+    </div>
+
+    <div style="margin-top: 2rem;">
+        <a href="#" class="btn btn-primary" style="margin-right: 1rem;">
+            <i class="fas fa-book"></i>
+            Browse Recipes
+        </a>
+        <a href="#" class="btn btn-secondary">
+            <i class="fas fa-plus"></i>
+            Create Recipe
+        </a>
+    </div>
+
+    <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e2e8f0;">
+        <a href="/logout" class="btn btn-secondary logout-btn" style="background: #fed7d7; color: #742a2a; border-color: #feb2b2;">
+            <i class="fas fa-sign-out-alt"></i>
+            Logout
+        </a>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,1 +1,8 @@
 flask
+flask_sqlalchemy
+dotenv
+Authlib
+Flask-OAuthlib
+PyJWT
+datetime
+flask_cors
