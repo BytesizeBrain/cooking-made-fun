@@ -48,7 +48,7 @@ def jwt_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-@users_bp.route('/login', methods=['POST'])
+@users_bp.route('/login')
 def login():
 
     # Check if user is already logged in
@@ -119,7 +119,7 @@ def authorize_google():
 
     jwt_token = jwt.encode(payload, app.config['JWT_SECRET'], algorithm='HS256')
     
-    return redirect(f"{app.config['FRONTEND_URL']}?token={jwt_token}") # Redirect users to the frontend ouath callback route with the JWT token
+    return redirect(f"{app.config['FRONTEND_URL']}/register?token={jwt_token}") # Redirect users to the frontend ouath callback route with the JWT token
 
 @users_bp.route('/api/user/register', methods=['POST'])
 @jwt_required
@@ -128,7 +128,7 @@ def complete_profile():
     # Check if user already exists
     existing_user = User.query.filter_by(email=g.jwt['email']).first()
     if existing_user:
-        return redirect(app.config['FRONTEND_URL']) # TODO ensure this redirects to the fontend index
+        return jsonify({"error": "User already exists"}), 400
     
     # Validate input
     if 'display_name' not in request.json or not request.json['display_name']:
@@ -162,7 +162,23 @@ def complete_profile():
         logging.error(f"Error creating new user: {e}")
         return jsonify({"error": "An error occurred while creating the user. Please try again."}), 500
     
-    return redirect(app.config['FRONTEND_URL']) # TODO ensure this redirects to the fontend index
+    return jsonify({"message": "User registered successfully", "user_id": new_id}), 201
+
+@users_bp.route('/api/user/profile', methods=['GET'])
+@jwt_required
+def get_profile():
+    """Get the current user's profile information"""
+    user = User.query.filter_by(email=g.jwt['email']).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    return jsonify({
+        "id": user.id,
+        "email": user.email,
+        "username": user.username,
+        "display_name": user.display_name,
+        "profile_pic": user.profile_pic
+    }), 200
 
 @users_bp.route('/api/user/update', methods=['PUT'])
 @jwt_required
